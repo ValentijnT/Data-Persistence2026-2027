@@ -1,5 +1,3 @@
-package ovchip;
-
 import dao.ReizigerDAO;
 import daopsql.ReizigerDAOPsql;
 import domain.Reiziger;

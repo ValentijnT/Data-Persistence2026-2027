@@ -1,4 +1,4 @@
-package doapsql;
+package daopsql;
 
 import dao.ReizigerDAO;
 import domain.Reiziger;

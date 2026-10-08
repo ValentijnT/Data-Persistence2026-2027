@@ -26,7 +26,7 @@ public class ReizigerDAOPsql implements ReizigerDAO {
     }
 
     @Override
-    public Boolean save(Reiziger r) {
+    public boolean save(Reiziger r) {
         String sql = "INSERT INTO reiziger (reiziger_id, voorletters, tussenvoegsel, achternaam, geboortedatum) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setInt(1, r.getId());
@@ -49,7 +49,7 @@ public class ReizigerDAOPsql implements ReizigerDAO {
     }
 
     @Override
-    public Boolean update(Reiziger r) {
+    public boolean update(Reiziger r) {
         String sql = "UPDATE reiziger SET voorletters = ?, tussenvoegsel = ?, achternaam = ?, geboortedatum = ? WHERE reiziger_id = ?";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setInt(5, r.getId());
@@ -60,16 +60,10 @@ public class ReizigerDAOPsql implements ReizigerDAO {
 
             boolean updatedReiziger = pst.executeUpdate() > 0;
 
-            Adres bestaandAdres = adresDAO.findByReiziger(r);
-
             if (r.getAdres() != null) {
-                if (bestaandAdres != null) {
-                    adresDAO.update(r.getAdres());
-                } else {
-                    adresDAO.save(r.getAdres());
-                }
-            } else if (bestaandAdres != null){
-                    adresDAO.delete(bestaandAdres);
+                adresDAO.update(r.getAdres());
+            } else {
+                adresDAO.save(r.getAdres());
             }
 
             return updatedReiziger;
@@ -80,17 +74,16 @@ public class ReizigerDAOPsql implements ReizigerDAO {
     }
 
     @Override
-    public Boolean delete(Reiziger r) {
-        Adres adres = adresDAO.findByReiziger(r);
-        if (adres != null) {
-            adresDAO.delete(adres);
-        }
+    public boolean delete(Reiziger r) {
+        try {
+            adresDAO.delete(r.getAdres());
 
-        String sql = "DELETE FROM reiziger WHERE reiziger_id = ?";
-        try (PreparedStatement pst = conn.prepareStatement(sql)) {
-            pst.setInt(1, r.getId());
+            String sql = "DELETE FROM reiziger WHERE reiziger_id = ?";
+            try (PreparedStatement pst = conn.prepareStatement(sql)) {
+                pst.setInt(1, r.getId());
 
-            return pst.executeUpdate() > 0;
+                return pst.executeUpdate() > 0;
+            }
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -102,18 +95,19 @@ public class ReizigerDAOPsql implements ReizigerDAO {
         String sql = "SELECT reiziger_id, voorletters, tussenvoegsel, achternaam, geboortedatum FROM reiziger WHERE reiziger_id = ?";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setInt(1, id);
-            ResultSet rs = pst.executeQuery();
-            if (rs.next()) {
-                Reiziger r = new Reiziger(
-                        rs.getInt("reiziger_id"),
-                        rs.getString("voorletters"),
-                        rs.getString("tussenvoegsel"),
-                        rs.getString("achternaam"),
-                        rs.getDate("geboortedatum").toLocalDate()
-                );
-                Adres adres = adresDAO.findByReiziger(r);
-                r.setAdres(adres);
-                return r;
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    Reiziger r = new Reiziger(
+                            rs.getInt("reiziger_id"),
+                            rs.getString("voorletters"),
+                            rs.getString("tussenvoegsel"),
+                            rs.getString("achternaam"),
+                            rs.getDate("geboortedatum").toLocalDate()
+                    );
+                    Adres adres = adresDAO.findByReiziger(r);
+                    r.setAdres(adres);
+                    return r;
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -127,19 +121,20 @@ public class ReizigerDAOPsql implements ReizigerDAO {
         String sql = "SELECT reiziger_id, voorletters, tussenvoegsel, achternaam, geboortedatum FROM reiziger WHERE geboortedatum = ?";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setDate(1, java.sql.Date.valueOf(geboortedatum));
-            ResultSet rs = pst.executeQuery();
-            while (rs.next()) {
-                Reiziger r = new Reiziger(
-                        rs.getInt("reiziger_id"),
-                        rs.getString("voorletters"),
-                        rs.getString("tussenvoegsel"),
-                        rs.getString("achternaam"),
-                        rs.getDate("geboortedatum").toLocalDate()
-                );
-                Adres adres = adresDAO.findByReiziger(r);
-                r.setAdres(adres);
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    Reiziger r = new Reiziger(
+                            rs.getInt("reiziger_id"),
+                            rs.getString("voorletters"),
+                            rs.getString("tussenvoegsel"),
+                            rs.getString("achternaam"),
+                            rs.getDate("geboortedatum").toLocalDate()
+                    );
+                    Adres adres = adresDAO.findByReiziger(r);
+                    r.setAdres(adres);
 
-                reizigers.add(r);
+                    reizigers.add(r);
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -152,20 +147,21 @@ public class ReizigerDAOPsql implements ReizigerDAO {
         List<Reiziger> reizigers = new ArrayList<>();
         String sql = "SELECT reiziger_id, voorletters, tussenvoegsel, achternaam, geboortedatum FROM reiziger";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
-            ResultSet rs = pst.executeQuery();
-            while (rs.next()) {
-                Reiziger r = new Reiziger(
-                        rs.getInt("reiziger_id"),
-                        rs.getString("voorletters"),
-                        rs.getString("tussenvoegsel"),
-                        rs.getString("achternaam"),
-                        rs.getDate("geboortedatum").toLocalDate()
-                );
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    Reiziger r = new Reiziger(
+                            rs.getInt("reiziger_id"),
+                            rs.getString("voorletters"),
+                            rs.getString("tussenvoegsel"),
+                            rs.getString("achternaam"),
+                            rs.getDate("geboortedatum").toLocalDate()
+                    );
 
-                Adres adres = adresDAO.findByReiziger(r);
-                r.setAdres(adres);
+                    Adres adres = adresDAO.findByReiziger(r);
+                    r.setAdres(adres);
 
-                reizigers.add(r);
+                    reizigers.add(r);
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();

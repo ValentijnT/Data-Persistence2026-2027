@@ -1,5 +1,6 @@
 import dao.*;
 import daopsql.AdresDAOPsql;
+import daopsql.OVChipkaartDAOPsql;
 import daopsql.ReizigerDAOPsql;
 import domain.Adres;
 import domain.Reiziger;
@@ -14,22 +15,25 @@ public class Main {
 
         try(Connection myConn = DatabaseConnection.getConnection()){
             //Test P3
-            System.out.println("\n\nTest 3:");
+            System.out.println("\n\nTest 4:");
 
             ReizigerDAOPsql rdao = new ReizigerDAOPsql(myConn);
             AdresDAOPsql adao = new AdresDAOPsql(myConn);
+            OVChipkaartDAOPsql odao = new OVChipkaartDAOPsql(myConn);
 
+            rdao.setOvChipkaartDAO(odao);
             rdao.setAdresDAO(adao);
             adao.setReizigerDAO(rdao);
+            odao.setReizigerDAO(rdao);
 
-            testP3(rdao, adao);
+            testP4(rdao, adao, odao);
 
         } catch (SQLException e){
             e.printStackTrace();
         }
     }
 
-    private static void testP3(ReizigerDAO rdao, AdresDAO adao) throws SQLException {
+    private static void testP4(ReizigerDAO rdao, AdresDAO adao, OVChipkaartDAO odao) throws SQLException {
         //Haal alle reizigers + adressen op
         List<Reiziger> reizigers = rdao.findAll();
         System.out.println("ReizigerDAO.findAll() geeft:");

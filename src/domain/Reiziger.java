@@ -1,6 +1,8 @@
 package domain;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Reiziger {
     private int id;
@@ -9,6 +11,7 @@ public class Reiziger {
     private String achternaam;
     private LocalDate geboortedatum;
     private Adres adres;
+    private List<OVChipkaart> ovchipkaarten = new ArrayList<>();
 
     public Reiziger(int reiziger_id, String voorletters, String tussenvoegsel, String achternaam, LocalDate geboortedatum) {
         this.id = reiziger_id;
@@ -24,6 +27,7 @@ public class Reiziger {
     public String getAchternaam() { return achternaam; }
     public LocalDate getGeboortedatum() { return geboortedatum; }
     public Adres getAdres() { return adres; }
+    public List<OVChipkaart> getOvchipkaarten() { return ovchipkaarten; }
 
 
     public void setId(int id) { this.id = id; }
@@ -33,6 +37,10 @@ public class Reiziger {
     public void setGeboortedatum(LocalDate geboortedatum) { this.geboortedatum = geboortedatum; }
     public void setAdres(Adres adres) { this.adres = adres; }
 
+    public void addOVChipkaart(OVChipkaart ovChipkaart) {
+        ovchipkaarten.add(ovChipkaart);
+        ovChipkaart.setReiziger(this);
+    }
 
     public String getNaam(){
         String tv = (tussenvoegsel != null) ? tussenvoegsel + " " : "";
@@ -41,7 +49,19 @@ public class Reiziger {
 
     public String toString() {
         String adresString = (adres != null) ? ", Adres: " + adres : "";
-        return  "Reiziger {#" + getId() + ": " + getNaam() + " (" + geboortedatum + ")" + adresString + "}";
+
+        StringBuilder sb = new StringBuilder();
+        if (ovchipkaarten != null && !ovchipkaarten.isEmpty()) {
+            sb.append("\nOVChipkaarten:\n");
+            for (OVChipkaart ov : ovchipkaarten) {
+                sb.append(ov.toString()).append("\n");
+            }
+        } else {
+            sb.append("\nOVChipkaarten: Geen\n");
+        }
+        String OVChipkaartString = sb.toString();
+
+        return  "Reiziger {#" + getId() + ": " + getNaam() + " (" + geboortedatum + ")" + adresString + "}" + OVChipkaartString;
     }
 
 }

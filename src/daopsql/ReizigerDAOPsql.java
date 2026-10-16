@@ -62,8 +62,6 @@ public class ReizigerDAOPsql implements ReizigerDAO {
 
             if (r.getAdres() != null) {
                 adresDAO.update(r.getAdres());
-            } else {
-                adresDAO.save(r.getAdres());
             }
 
             return updatedReiziger;

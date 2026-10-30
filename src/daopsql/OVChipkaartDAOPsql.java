@@ -3,6 +3,7 @@ package daopsql;
 import dao.OVChipkaartDAO;
 import dao.ReizigerDAO;
 import domain.OVChipkaart;
+import domain.Product;
 import domain.Reiziger;
 
 import java.sql.Connection;
@@ -15,6 +16,7 @@ import java.util.List;
 public class OVChipkaartDAOPsql implements OVChipkaartDAO {
     private Connection conn;
     private ReizigerDAO rdao;
+    private ProductDAOPsql pdao;
 
     public OVChipkaartDAOPsql(Connection conn) throws SQLException {
         this.conn = conn;
@@ -22,17 +24,32 @@ public class OVChipkaartDAOPsql implements OVChipkaartDAO {
 
     public void setReizigerDAO(ReizigerDAO rdao) {this.rdao = rdao;}
 
+    public void setProductDAO(ProductDAOPsql pdao) {this.pdao = pdao;}
+
     @Override
     public boolean save(OVChipkaart ov) {
         String sql = "INSERT INTO ov_chipkaart (kaart_nummer, geldig_tot, klasse, saldo, reiziger_id) VALUES (?, ?, ?, ?, ?)";
-        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+        String linkInsert = "INSERT INTO ov_chipkaart_product (kaart_nummer, product_nummer) VALUES (?, ?)";
+        try (
+                PreparedStatement pst = conn.prepareStatement(sql);
+                PreparedStatement pstLinkInsert = conn.prepareStatement(linkInsert)
+        ) {
             pst.setInt(1, ov.getKaartNummer());
             pst.setDate(2, java.sql.Date.valueOf(ov.getGeldigTot()));
             pst.setInt(3, ov.getKlasse());
             pst.setDouble(4, ov.getSaldo());
             pst.setInt(5, ov.getReiziger().getId());
+            boolean saved = pst.executeUpdate() > 0;
 
-            return pst.executeUpdate() > 0;
+            if (saved) {
+                for (Product p : ov.getProducten()) {
+                    pstLinkInsert.setInt(1, ov.getKaartNummer());
+                    pstLinkInsert.setInt(2, p.getProduct_nummer());
+                    pstLinkInsert.executeUpdate();
+                }
+            }
+
+            return saved;
         }catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -42,14 +59,32 @@ public class OVChipkaartDAOPsql implements OVChipkaartDAO {
     @Override
     public boolean update(OVChipkaart ovChipkaart) {
         String sql = "UPDATE ov_chipkaart SET geldig_tot = ?, klasse = ?, saldo = ?, reiziger_id = ? WHERE kaart_nummer = ?";
-        try(PreparedStatement pst = conn.prepareStatement(sql)){
+        String linkDelete = "DELETE FROM ov_chipkaart_product WHERE kaart_nummer = ?";
+        String linkInsert = "INSERT INTO ov_chipkaart_product (kaart_nummer, product_nummer) VALUES (?, ?)";
+        try(
+                PreparedStatement pst = conn.prepareStatement(sql);
+                PreparedStatement pstLinkDelete = conn.prepareStatement(linkDelete);
+                PreparedStatement pstLinkInsert = conn.prepareStatement(linkInsert)
+        ){
             pst.setDate(1, java.sql.Date.valueOf(ovChipkaart.getGeldigTot()));
             pst.setInt(2, ovChipkaart.getKlasse());
             pst.setDouble(3, ovChipkaart.getSaldo());
             pst.setInt(4, ovChipkaart.getReiziger().getId());
             pst.setInt(5, ovChipkaart.getKaartNummer());
+            boolean updated = pst.executeUpdate() > 0;
 
-            return pst.executeUpdate() > 0;
+            if (updated) {
+                pstLinkDelete.setInt(1, ovChipkaart.getKaartNummer());
+                pstLinkDelete.executeUpdate();
+
+                for (Product p : ovChipkaart.getProducten()) {
+                    pstLinkInsert.setInt(1, ovChipkaart.getKaartNummer());
+                    pstLinkInsert.setInt(2, p.getProduct_nummer());
+                    pstLinkInsert.executeUpdate();
+                }
+            }
+
+            return updated;
         } catch (Exception e){
             e.printStackTrace();
             return false;
@@ -58,8 +93,15 @@ public class OVChipkaartDAOPsql implements OVChipkaartDAO {
 
     @Override
     public boolean delete(OVChipkaart ovChipkaart) {
+        String linkDelete = "DELETE FROM ov_chipkaart_product WHERE kaart_nummer = ?";
         String sql = "DELETE FROM ov_chipkaart WHERE kaart_nummer = ?";
-        try(PreparedStatement pst = conn.prepareStatement(sql)){
+        try(
+                PreparedStatement pstLinkDelete = conn.prepareStatement(linkDelete);
+                PreparedStatement pst = conn.prepareStatement(sql)
+        ){
+            pstLinkDelete.setInt(1, ovChipkaart.getKaartNummer());
+            pstLinkDelete.executeUpdate();
+
             pst .setInt(1, ovChipkaart.getKaartNummer());
 
             return pst.executeUpdate() > 0;
@@ -85,6 +127,9 @@ public class OVChipkaartDAOPsql implements OVChipkaartDAO {
                             rs.getDouble("saldo"),
                             r
                     );
+                    if(pdao != null) {
+                        ovChipkaart.setProducten(pdao.findByOVChipkaart(ovChipkaart));
+                    }
                     ovChipkaarten.add(ovChipkaart);
                 }
             }
@@ -112,6 +157,11 @@ public class OVChipkaartDAOPsql implements OVChipkaartDAO {
                             rs.getDouble("saldo"),
                             reiziger
                     );
+
+                    if (pdao != null) {
+                        ov.setProducten(pdao.findByOVChipkaart(ov));
+                    }
+
                     ovChipkaarten.add(ov);
                 }
             }

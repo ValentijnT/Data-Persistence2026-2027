@@ -1,8 +1,11 @@
 import dao.*;
 import daopsql.AdresDAOPsql;
 import daopsql.OVChipkaartDAOPsql;
+import daopsql.ProductDAOPsql;
 import daopsql.ReizigerDAOPsql;
 import domain.Adres;
+import domain.OVChipkaart;
+import domain.Product;
 import domain.Reiziger;
 import util.DatabaseConnection;
 
@@ -14,83 +17,60 @@ public class Main {
     public static void main(String[] args) {
 
         try(Connection myConn = DatabaseConnection.getConnection()){
-            //Test P3
-            System.out.println("\n\nTest 4:");
+            //Test P5
+            System.out.println("\n\nTest 5:");
 
             ReizigerDAOPsql rdao = new ReizigerDAOPsql(myConn);
             AdresDAOPsql adao = new AdresDAOPsql(myConn);
             OVChipkaartDAOPsql odao = new OVChipkaartDAOPsql(myConn);
+            ProductDAOPsql pdao = new ProductDAOPsql(myConn);
 
-            rdao.setOvChipkaartDAO(odao);
             rdao.setAdresDAO(adao);
+            rdao.setOvChipkaartDAO(odao);
             adao.setReizigerDAO(rdao);
             odao.setReizigerDAO(rdao);
+            odao.setProductDAO(pdao);
+            pdao.setOVChipkaartDAO(odao);
 
-            testP4(rdao, adao, odao);
+            testP5(rdao, adao, odao, pdao);
 
         } catch (SQLException e){
             e.printStackTrace();
         }
     }
 
-    private static void testP4(ReizigerDAO rdao, AdresDAO adao, OVChipkaartDAO odao) throws SQLException {
-        //Haal alle reizigers + adressen op
-        List<Reiziger> reizigers = rdao.findAll();
-        System.out.println("ReizigerDAO.findAll() geeft:");
-        for (Reiziger r : reizigers) {
-            System.out.println(r);
+    private static void testP5(ReizigerDAO rdao, AdresDAO adao, OVChipkaartDAO odao, ProductDAO pdao) throws SQLException {
+        Reiziger r1 = rdao.findById(2);
+        System.out.println("Producten van reiziger " + r1.getId() + " (" + r1.getNaam() + "):");
+
+        boolean gevonden = false;
+        for (OVChipkaart ov : r1.getOvchipkaarten()) {
+            for (Product p : ov.getProducten()) {
+                System.out.println("  kaart " + ov.getKaartNummer() + ": " + p);
+                gevonden = true;
+            }
+        }
+        if (!gevonden) {
+            System.out.println("  geen producten");
         }
 
-        //Haal alle adressen op
-        List<Adres> adressen = adao.findAll();
-        System.out.println("\nAdresDAO.findAll() geeft:");
-        for (Adres a : adressen) {
-            System.out.println(a);
-        }
+        Product p = new Product(901, "Dalurenkorting", "Korting buiten de spits", 12.50);
+        pdao.save(p);
 
-        //Nieuwe reiziger + nieuw adres koppelen
-        Reiziger valentijn = new Reiziger(77, "V", null, "Tol", LocalDate.of(2003,9,26));
-        System.out.println("\nReiziger valentijn geeft: " +  valentijn);
-        Adres valentijnAdres = new Adres(77, "3704AZ", "13", "Harmonielaan", "Zeist", null);
-        System.out.println("Adres geeft zonder koppeling: " + valentijnAdres);
-        valentijn.setAdres(valentijnAdres);
-        valentijnAdres.setReiziger(valentijn);
+        Reiziger r = new Reiziger(82, "P", null, "Producttester", LocalDate.of(2000, 1, 1));
+        rdao.save(r);
 
-        System.out.println("\nTest opslaan reiziger + adres:");
-        rdao.save(valentijn);
+        OVChipkaart ov = new OVChipkaart(94001, LocalDate.of(2030, 1, 1), 2, 30.0, r);
+        r.addOVChipkaart(ov);
+        odao.save(ov);
 
-        System.out.println("Reiziger na save: " + rdao.findById(77));
-        System.out.println("Adres na save: " + adao.findByReiziger(valentijn));
-        System.out.println();
+        ov.addProduct(p);
+        odao.update(ov);
 
-        //update van reiziger en adres
-        System.out.println("\nTest update reiziger + adres");
-        valentijn.setAchternaam("Tollenaar");
-        valentijn.getAdres().setStraat("Laan van Vollenhove");
+        System.out.println(odao.findByReiziger(r));
+        System.out.println(pdao.findByOVChipkaart(ov));
 
-        rdao.update(valentijn);
-
-        System.out.println("Reiziger na update: " + rdao.findById(77));
-        System.out.println("Adres na update: " + adao.findByReiziger(valentijn));
-
-        //delete van reiziger en adres
-        System.out.println("\nTest delete reiziger + adres");
-        rdao.delete(valentijn);
-
-        System.out.println("Reiziger na delete: " + rdao.findById(77));
-        System.out.println("Adres na delete: " + adao.findByReiziger(valentijn));
-        System.out.println();
-
-        //findbyReiziger na delete
-        System.out.println("ReizigerDAO.findAll() na delete geeft:");
-        for (Reiziger r : reizigers) {
-            System.out.println(r);
-        }
-
-        //findByGbdatum
-        String gbdatumFind = rdao.findByGbdatum(LocalDate.of(2002, 9, 17)).toString();
-        System.out.println("\nfindByGbdatum geeft: " + gbdatumFind);
-
-
+        rdao.delete(r);
+        pdao.delete(p);
     }
 }

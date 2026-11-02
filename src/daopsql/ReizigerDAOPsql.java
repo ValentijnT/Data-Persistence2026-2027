@@ -96,7 +96,7 @@ public class ReizigerDAOPsql implements ReizigerDAO {
     public boolean delete(Reiziger r) {
         try {
             if (r.getAdres() != null) {
-                adresDAO.update(r.getAdres());
+                adresDAO.delete(r.getAdres());
             }
 
             if (ovChipkaartDAO != null) {

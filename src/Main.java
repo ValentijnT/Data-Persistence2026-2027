@@ -40,37 +40,20 @@ public class Main {
     }
 
     private static void testP5(ReizigerDAO rdao, AdresDAO adao, OVChipkaartDAO odao, ProductDAO pdao) throws SQLException {
-        Reiziger r1 = rdao.findById(2);
-        System.out.println("Producten van reiziger " + r1.getId() + " (" + r1.getNaam() + "):");
+        System.out.println("\n---------- Test ProductDAO.findAll() ----------");
 
-        boolean gevonden = false;
-        for (OVChipkaart ov : r1.getOvchipkaarten()) {
-            for (Product p : ov.getProducten()) {
-                System.out.println("  kaart " + ov.getKaartNummer() + ": " + p);
-                gevonden = true;
+        List<Product> producten = pdao.findAll();
+
+        for (Product p : producten) {
+            System.out.println("Product " + p.getNaam() + " wordt " + p.getOvchipkaarten().size() + " keer gebruikt");
+            System.out.println("\n" + p);
+
+            for (OVChipkaart ov : p.getOvchipkaarten()) {
+                System.out.println("  OV-chipkaart: " + ov);
+                System.out.println("  Reiziger: " + ov.getReiziger());
+                System.out.println("  Adres: " + ov.getReiziger().getAdres());
+                System.out.println("\n");
             }
         }
-        if (!gevonden) {
-            System.out.println("  geen producten");
-        }
-
-        Product p = new Product(901, "Dalurenkorting", "Korting buiten de spits", 12.50);
-        pdao.save(p);
-
-        Reiziger r = new Reiziger(82, "P", null, "Producttester", LocalDate.of(2000, 1, 1));
-        rdao.save(r);
-
-        OVChipkaart ov = new OVChipkaart(94001, LocalDate.of(2030, 1, 1), 2, 30.0, r);
-        r.addOVChipkaart(ov);
-        odao.save(ov);
-
-        ov.addProduct(p);
-        odao.update(ov);
-
-        System.out.println(odao.findByReiziger(r));
-        System.out.println(pdao.findByOVChipkaart(ov));
-
-        rdao.delete(r);
-        pdao.delete(p);
     }
 }

@@ -157,6 +157,18 @@ public class ProductDAOPsql implements ProductDAO {
                 );
                 producten.add(p);
             }
+
+            if (ovdao != null) {
+                for (OVChipkaart ov : ovdao.findAll()) {
+                    for (Product product : ov.getProducten()) {
+                        for (Product p : producten) {
+                            if (p.getProduct_nummer() == product.getProduct_nummer()) {
+                                p.addOVChipkaart(ov);
+                            }
+                        }
+                    }
+                }
+            }
         } catch (SQLException e){
             e.printStackTrace();
         }
